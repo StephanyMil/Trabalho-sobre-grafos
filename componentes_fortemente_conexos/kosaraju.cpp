@@ -9,132 +9,110 @@
 
 using namespace std;
 
-class Grafo
-{
+class Graph {
 private:
-	int V; // número de vértices
-	list<int> * adj; // lista de adjacência
-
-	void preenche(int v, bool visitados[], stack<int>& pilha)
-	{
-		// marca o vértice atual como visitado
-		visitados[v] = true;
-
-		// percorre os adjacentes de v
-		list<int>::iterator i;
-		for(i = adj[v].begin(); i != adj[v].end(); i++)
-		{
-			if(visitados[*i] == false)
-				preenche(*i, visitados, pilha);
-		}
-		pilha.push(v);
-	}
-
-	// bem parecida com a função preenche
-	void DFS(int v, bool visitados[])
-	{
-		// marca o vértice atual como visitado
-		visitados[v] = true;
-
-		// imprime o vértice
-		cout << v << " ";
-
-		// percorre os adjacentes de v
-		list<int>::iterator i;
-		for(i = adj[v].begin(); i != adj[v].end(); i++)
-		{
-			if(visitados[*i] == false)
-				DFS(*i, visitados);
-		}
-	}
+    int numVertices;
+    list<int> *adjacencyList;
+    
+    // Função auxiliar para realizar a Busca em Profundidade e preencher a pilha
+    void fillOrder(int v, bool visited[], stack<int>& stack) {
+        visited[v] = true;
+        
+        // Percorre os vizinhos do vértice atual
+        for (int neighbor : adjacencyList[v]) {
+            if (!visited[neighbor])
+                fillOrder(neighbor, visited, stack);
+        }
+        stack.push(v);
+    }
+    
+    // Função auxiliar para a Busca em Profundidade
+    void DFS(int v, bool visited[]) {
+        visited[v] = true;
+        cout << v << " ";
+        
+        // Percorre os vizinhos do vértice atual
+        for (int neighbor : adjacencyList[v]) {
+            if (!visited[neighbor])
+                DFS(neighbor, visited);
+        }
+    }
 
 public:
+     // Construtor
+    Graph(int numVertices) {
+        this->numVertices = numVertices;
+        adjacencyList = new std::list<int>[numVertices];
+    }
+    
+    // Método para adicionar uma aresta ao grafo
+    void addEdge(int i, int j) {
+        adjacencyList[i].push_back(j);
+    }
+    
+    // Método para obter o grafo transposto
+    Graph getTranspose() {
+        Graph transposedGraph(numVertices);
+        
+         // Percorre o grafo original e popula as listas de adjacência do grafo transposto
+        for (int v = 0; v < numVertices; ++v) {
+            for (int neighbor : adjacencyList[v]) {
+                transposedGraph.adjacencyList[neighbor].push_back(v);
+            }
+        }
 
-	// construtor
-	Grafo(int V)
-	{
-		this->V = V;
-		adj = new list<int>[V]; // cria as listas
-	}
-
-	// adiciona arestas
-	void adicionarAresta(int i, int j)
-	{
-		// adiciona "j" à lista de adjacência de "i"
-		adj[i].push_back(j);
-	}
-
-	// obtém o grafo transposto
-	Grafo obterGrafoTransposto()
-	{
-		Grafo grafo_transposto(V);
-
-		for(int v = 0; v < V; v++)
-		{
-			list<int>::iterator i;
-			for(i = adj[v].begin(); i != adj[v].end(); i++)
-			{
-				// insere no novo grafo
-				grafo_transposto.adj[*i].push_back(v);
-			}
-		}
-
-		return grafo_transposto;
-	}
-
-	void imprimirComponentes()
-	{
-		stack<int> pilha;
-		bool * visitados = new bool[V];
-
-		// marca todos como não visitados
-		for(int i = 0; i < V; i++)
-			visitados[i] = false;
-
-		// preenche a pilha
-		for(int i = 0; i < V; i++)
-		{
-			if(visitados[i] == false)
-				preenche(i, visitados, pilha);
-		}
-
-		// cria o grafo transposto
-		Grafo gt = obterGrafoTransposto();
-
-		// marca todos como não visitados novamente
-		for(int i = 0; i < V; i++)
-			visitados[i] = false;
-
-		// processa os vértices de acordo com a pilha
-		while(!pilha.empty())
-		{
-			// obtém o elemento do topo
-			int v = pilha.top();
-
-			//remove o elemento
-			pilha.pop();
-
-			// imprime cada componente fortemente conexa
-			if(visitados[v] == false)
-			{
-				gt.DFS(v, visitados);
-				cout << "\n";
-			}
-		}
-	}
+        return transposedGraph;
+    }
+    
+    // Método para imprimir componentes fortemente conectados
+    void printStronglyConnectedComponents() {
+        stack<int> stack;
+        bool *visited = new bool[numVertices];
+        
+        // Inicializa o array de visitados
+        for (int i = 0; i < numVertices; ++i)
+            visited[i] = false;
+            
+        // Preenche a pilha usando Busca em Profundidade
+        for (int i = 0; i < numVertices; ++i) {
+            if (!visited[i])
+                fillOrder(i, visited, stack);
+        }
+        
+        // Obtém o grafo transposto
+        Graph transposedGraph = getTranspose();
+        
+        // Reseta o array de visitados
+        for (int i = 0; i < numVertices; ++i)
+            visited[i] = false;
+            
+        // Processa os vértices na ordem da pilha
+        while (!stack.empty()) {
+            int v = stack.top();
+            stack.pop();
+            
+            // Imprime componente fortemente conectado
+            if (!visited[v]) {
+                transposedGraph.DFS(v, visited);
+                cout << "\n";
+            }
+        }
+    }
 };
 
-int main(int argc, char *argv[])
-{
-	Grafo g(5);
-	
-	g.adicionarAresta(0, 1);
-	g.adicionarAresta(1, 2);
-	g.adicionarAresta(1, 3);
-	g.adicionarAresta(2, 0);
-	g.adicionarAresta(3, 4);
-	
-	g.imprimirComponentes();
-	
-	return 0;
+int main() {
+    // Cria um grafo com 5 vértices
+    Graph g(5);
+    
+    // Adiciona arestas ao grafo
+    g.addEdge(0, 1);
+    g.addEdge(1, 2);
+    g.addEdge(1, 3);
+    g.addEdge(2, 0);
+    g.addEdge(3, 4);
+    
+    // Imprime componentes fortemente conectados
+    g.printStronglyConnectedComponents();
+
+    return 0;
 }
